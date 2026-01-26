@@ -1,19 +1,19 @@
 Package: copulapop
 Type: Package
-Title: Generate Virtual Populations Using Vine Copulas
-Version: 1.0.0
-Date: 2026-01-20
+Title: Fit and Generate Virtual Populations Using Vine Copulas
+Version: 2.0.0
+Date: 2026-01-26
 Authors@R: person("Rob", "ter Heine", 
                   email = "rob.terheine@radboudumc.nl",
                   role = c("aut", "cre"),
                   comment = c(ORCID = "0000-0001-9720-866X"))
-Description: Generate realistic virtual patient populations for pharmacometric 
-    modeling, PBPK simulations, and clinical trial simulations. Uses R-Vine 
-    copulas to preserve complex correlation structures and tail dependencies 
-    between covariates. Includes pre-fitted models for international datasets 
-    (Netherlands, China, South Korea, Tanzania, USA, UK) with age, height, 
-    weight, and optionally creatinine/eGFR. Provides validation report 
-    generation to assess copula fit quality.
+Description: Fit R-Vine copulas to your own datasets and generate realistic 
+    virtual patient populations for pharmacometric modeling, PBPK simulations, 
+    and clinical trial simulations. Preserves complex correlation structures 
+    and tail dependencies between covariates. Includes pre-fitted models for 
+    international datasets (Netherlands, China, South Korea, Tanzania, USA, UK) 
+    with age, height, weight, and optionally creatinine/eGFR. Provides validation 
+    report generation to assess copula fit quality.
 License: MIT + file LICENSE
 URL: https://github.com/robterheine/copulapop
 BugReports: https://github.com/robterheine/copulapop/issues
