@@ -276,6 +276,24 @@ common_cols <- setdiff(common_cols, exclude_list)
 original_data <- original_data[, common_cols, drop = FALSE]
 generated_data <- generated_data[, common_cols, drop = FALSE]
 
+# Harmonize HEIGHT units (convert cm to m if needed)
+height_col <- grep("^height$", names(original_data), ignore.case = TRUE, value = TRUE)[1]
+if (!is.na(height_col) && height_col %in% names(original_data) && height_col %in% names(generated_data)) {
+  orig_height_median <- median(original_data[[height_col]], na.rm = TRUE)
+  gen_height_median <- median(generated_data[[height_col]], na.rm = TRUE)
+  
+  # If original is in cm (>3) and generated is in m (<3), convert original to m
+  if (!is.na(orig_height_median) && !is.na(gen_height_median)) {
+    if (orig_height_median > 3 && gen_height_median < 3) {
+      original_data[[height_col]] <- original_data[[height_col]] / 100
+    }
+    # If original is in m (<3) and generated is in cm (>3), convert generated to m
+    if (orig_height_median < 3 && gen_height_median > 3) {
+      generated_data[[height_col]] <- generated_data[[height_col]] / 100
+    }
+  }
+}
+
 # Detect variable types
 continuous_vars <- names(original_data)[sapply(original_data, function(x) {
   is.numeric(x) && length(unique(na.omit(x))) > 10
@@ -608,24 +626,39 @@ if (!is.na(age_col) && length(continuous_vars) >= 2) {
   outcome_vars <- setdiff(continuous_vars, age_col)[1:min(2, length(continuous_vars)-1)]
 
   heat_plots <- lapply(outcome_vars, function(v) {
+    # Combine data
     combined <- rbind(
       data.frame(x = original_data[[age_col]], y = original_data[[v]], source = "Original"),
       data.frame(x = generated_data[[age_col]], y = generated_data[[v]], source = "Generated")
-    ) %>% filter(!is.na(x) & !is.na(y))
-
+    ) %>% filter(!is.na(x) & !is.na(y) & is.finite(x) & is.finite(y))
+    
+    # Skip if insufficient data
+    if (nrow(combined) < 50) {
+      return(ggplot() + theme_void() + 
+        annotate("text", x = 0.5, y = 0.5, label = paste("Insufficient data for", v)))
+    }
+    
+    # Use geom_bin2d as more reliable alternative to geom_hex
     ggplot(combined, aes(x = x, y = y)) +
-      geom_hex(bins = 25) +
+      geom_bin2d(bins = 30) +
       facet_wrap(~source) +
-      scale_fill_viridis_c(option = "plasma") +
+      scale_fill_viridis_c(option = "plasma", trans = "log1p") +
       labs(title = paste(v, "|", age_col), x = age_col, y = v) +
       theme_bw(base_size = 9) +
-      theme(strip.background = element_rect(fill = "grey90"))
+      theme(strip.background = element_rect(fill = "grey90"),
+            legend.position = "right")
   })
 
+  # Filter out NULL plots
+  heat_plots <- heat_plots[!sapply(heat_plots, is.null)]
+  
   if (length(heat_plots) >= 2) {
     heat_plots[[1]] / heat_plots[[2]]
   } else if (length(heat_plots) == 1) {
     heat_plots[[1]]
+  } else {
+    ggplot() + theme_void() +
+      annotate("text", x = 0.5, y = 0.5, label = "Could not generate heatmaps")
   }
 } else {
   ggplot() + theme_void() +
