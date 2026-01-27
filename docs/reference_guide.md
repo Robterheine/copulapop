@@ -1,6 +1,6 @@
-# copulapop v1.0.0 - Complete Reference Guide
+# copulapop v2.0.0 - Complete Reference Guide
 
-Generate realistic virtual patient populations using vine copulas for pharmacometric modeling, PBPK simulations, and clinical trial simulations.
+Fit and generate realistic virtual patient populations using vine copulas for pharmacometric modeling, PBPK simulations, and clinical trial simulations.
 
 ---
 
@@ -19,6 +19,17 @@ install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2",
 
 ## Functions Overview
 
+### Copula Fitting (NEW in v2.0.0)
+
+| Function | Purpose |
+|----------|---------|
+| `fit_copula()` | Fit a vine copula from your own data |
+| `save_copula()` | Save fitted copula to JSON file |
+| `load_copula()` | Load copula from JSON file |
+| `generate_population_from_copula()` | Generate population from copula object |
+
+### Pre-fitted Datasets
+
 | Function | Purpose |
 |----------|---------|
 | `set_data_path()` | Set location of JSON data files |
@@ -27,13 +38,189 @@ install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2",
 | `get_dataset_info()` | Get dataset metadata |
 | `generate_population()` | Generate population from built-in dataset |
 | `generate_population_from_json()` | Generate population from custom JSON file |
+
+### Validation
+
+| Function | Purpose |
+|----------|---------|
 | `validate_copula()` | Generate PDF validation report |
 
 ---
 
 ## Function Reference
 
-### 1. `set_data_path()`
+### 1. `fit_copula()` *(NEW)*
+
+Fits an R-Vine copula model to a dataset, creating a copula object that can be used to generate virtual populations.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `data` | data.frame | *required* | Source data containing the variables |
+| `name` | character | "Custom Dataset" | Name for the copula |
+| `description` | character | NULL | Optional description |
+| `variables` | character vector | c("AGE", "HEIGHT", "WEIGHT") | Variables to include (AGE required) |
+| `sex_column` | character | NULL | Column name for sex (auto-detected) |
+| `height_in_cm` | logical | TRUE | Convert HEIGHT from cm to meters |
+| `country` | character | NULL | Optional country name |
+| `source` | character | NULL | Optional data source |
+| `source_url` | character | NULL | Optional URL to data source |
+| `adult_only` | logical | FALSE | Only fit adult (≥18) strata |
+| `n_quantiles` | integer | 1001 | Number of quantiles for marginals |
+| `min_stratum_n` | integer | 50 | Minimum N per stratum |
+| `verbose` | logical | TRUE | Print progress messages |
+
+#### Example
+
+```r
+# Load your data
+my_data <- read.csv("hospital_data.csv")
+
+# Fit copula with default variables
+copula <- fit_copula(my_data, name = "My Hospital")
+
+# Fit with additional variables
+copula <- fit_copula(
+  my_data,
+  name = "My Hospital",
+  variables = c("AGE", "HEIGHT", "WEIGHT", "CREAT"),
+  description = "Hospitalized patients 2020-2024",
+  country = "Netherlands"
+)
+
+# View summary
+print(copula)
+summary(copula)
+```
+
+#### Return
+
+A `copulapop_copula` object (list) containing:
+
+| Element | Description |
+|---------|-------------|
+| `info` | Metadata (name, description, country, etc.) |
+| `variables` | Variables included in the copula |
+| `overall` | Overall statistics (n_total, age_min, age_max, prop_male) |
+| `strata` | Fitted copula parameters per stratum |
+| `quantile_probs` | Quantile probabilities used |
+
+#### Strata
+
+The function fits separate copulas for each age-sex stratum:
+
+| Stratum | Description |
+|---------|-------------|
+| `pediatric_0` | Children (<18) female |
+| `pediatric_1` | Children (<18) male |
+| `pediatric_all` | All children |
+| `adult_0` | Adults (≥18) female |
+| `adult_1` | Adults (≥18) male |
+| `adult_all` | All adults |
+| `all` | Combined dataset |
+
+If vine copula fitting fails (insufficient data or numerical issues), a Gaussian copula fallback is used.
+
+#### Input Data Requirements
+
+Your data should have:
+- **AGE** column (required)
+- **HEIGHT** column (in cm or m)
+- **WEIGHT** column (in kg)
+- **SEX** column (optional: 1/M/male = male, 0/F/female = female)
+- Additional continuous variables (e.g., CREAT, ALBUMIN)
+
+Column names are case-insensitive.
+
+---
+
+### 2. `save_copula()` *(NEW)*
+
+Saves a fitted copula object to a JSON file for later use or sharing.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `copula` | copulapop_copula | *required* | Copula object from `fit_copula()` |
+| `file` | character | *required* | Output JSON file path |
+| `pretty` | logical | FALSE | Use indented JSON formatting |
+
+#### Example
+
+```r
+copula <- fit_copula(my_data, name = "My Hospital")
+save_copula(copula, "my_hospital.json")
+```
+
+#### Return
+
+Invisibly returns the file path.
+
+---
+
+### 3. `load_copula()` *(NEW)*
+
+Loads a previously saved copula from a JSON file.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `file` | character | *required* | Path to JSON file |
+
+#### Example
+
+```r
+copula <- load_copula("my_hospital.json")
+print(copula)
+```
+
+#### Return
+
+A `copulapop_copula` object.
+
+---
+
+### 4. `generate_population_from_copula()` *(NEW)*
+
+Generates a virtual population directly from a copulapop_copula object.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `copula` | copulapop_copula | *required* | Copula object from `fit_copula()` or `load_copula()` |
+| `n` | integer | 1000 | Number of virtual patients to generate |
+| `age_range` | numeric(2) | NULL | Age range [min, max]. NULL uses full range |
+| `sex` | character | "both" | Sex filter: "both", "male", or "female" |
+| `seed` | integer | NULL | Random seed for reproducibility |
+
+#### Example
+
+```r
+# Fit and generate in one workflow
+copula <- fit_copula(my_data, name = "My Hospital")
+pop <- generate_population_from_copula(copula, n = 1000)
+
+# With filters
+adults <- generate_population_from_copula(
+  copula,
+  n = 500,
+  age_range = c(18, 65),
+  sex = "male",
+  seed = 42
+)
+```
+
+#### Return
+
+A data.frame with the same structure as `generate_population()`.
+
+---
+
+### 5. `set_data_path()`
 
 Sets the directory path where the copulapop JSON data files are stored.
 
@@ -55,7 +242,7 @@ Invisibly returns the previous path setting.
 
 ---
 
-### 2. `get_data_path()`
+### 6. `get_data_path()`
 
 Returns the currently configured path to copulapop data files.
 
@@ -76,7 +263,7 @@ Character string with the data path, or NULL if not set.
 
 ---
 
-### 3. `list_datasets()`
+### 7. `list_datasets()`
 
 Lists all available datasets in the current data path.
 
@@ -97,7 +284,7 @@ Character vector of dataset names (without .json extension).
 
 ---
 
-### 4. `get_dataset_info()`
+### 8. `get_dataset_info()`
 
 Retrieves metadata and summary information about a specific dataset.
 
@@ -150,7 +337,7 @@ A list (class `copulapop_info`) containing:
 
 ---
 
-### 5. `generate_population()`
+### 9. `generate_population()`
 
 Generates a virtual patient population using vine copula-based simulation from a built-in dataset.
 
@@ -177,7 +364,7 @@ adults <- generate_population("NHANES", n = 500, age_range = c(18, 65))
 ped_f <- generate_population("CHNS", n = 200, age_range = c(2, 17), sex = "female")
 
 # Generate elderly males with reproducibility
-elderly_m <- generate_population("HSE", n = 300, age_range = c(65, 100), 
+elderly_m <- generate_population("HSE", n = 300, age_range = c(65, 90), 
                                   sex = "male", seed = 42)
 ```
 
@@ -194,7 +381,7 @@ A data.frame with the following columns:
 | `WEIGHT` | Weight | kg | ✓ |
 | `BMI` | Body mass index | kg/m² | ✓ (calculated) |
 | `BSA` | Body surface area | m² | ✓ (calculated) |
-| `CREAT` | Serum creatinine | µmol/L | Only RUMC, RUMC_IC, NHANES |
+| `CREAT` | Serum creatinine | µmol/L | Only RUMC, RUMC_IC, NHANES, KNHANES |
 | `EGFR` | Estimated GFR | mL/min/1.73m² | Only if CREAT available |
 | `ALBUMIN` | Serum albumin | g/L | Only RUMC_IC |
 
@@ -208,7 +395,7 @@ A data.frame with the following columns:
 
 ---
 
-### 6. `generate_population_from_json()`
+### 10. `generate_population_from_json()`
 
 Generates a virtual patient population from a custom-fitted vine copula stored in a JSON file.
 
@@ -242,43 +429,9 @@ adults <- generate_population_from_json(
 
 A data.frame with the same structure as `generate_population()`.
 
-#### JSON File Format
-
-The JSON file must follow the copulapop format with:
-
-```json
-{
-  "info": {
-    "name": "Dataset name",
-    "description": "Description",
-    "country": "Country",
-    "population": "Population type",
-    "has_creatinine": true/false
-  },
-  "variables": ["AGE", "HEIGHT", "WEIGHT", ...],
-  "quantile_probs": [0.001, 0.005, 0.01, ...],
-  "overall": {
-    "n_total": 1000,
-    "n_pediatric": 200,
-    "n_adult": 800,
-    "age_min": 0,
-    "age_max": 95,
-    "prop_male": 0.52
-  },
-  "strata": {
-    "pediatric_1": { ... },
-    "pediatric_0": { ... },
-    "adult_1": { ... },
-    "adult_0": { ... }
-  }
-}
-```
-
-This is the format produced by `generate_vine_copulas.R`.
-
 ---
 
-### 7. `validate_copula()`
+### 11. `validate_copula()`
 
 Generates a comprehensive PDF validation report comparing generated virtual populations against original source data.
 
@@ -314,15 +467,6 @@ validate_copula(
   title = "My Study Validation Report",
   author = "Rob ter Heine"
 )
-
-# With specific exclusions
-validate_copula(
-  source_data = my_data,
-  dataset = "HSE",
-  output_file = "HSE_validation.pdf",
-  exclude_vars = c("REGION", "ETHNICITY"),
-  exclude_derived = TRUE
-)
 ```
 
 #### Return
@@ -333,32 +477,13 @@ Invisibly returns the path to the generated PDF.
 
 The PDF validation report includes:
 
-1. **Executive Summary**
-   - Key metrics with interpretation
-   - Correlation RMSE
-   - KS statistics (median and maximum)
-
-2. **Data Overview**
-   - Sample characteristics table
-   - Descriptive statistics comparison (mean, SD, median)
-
-3. **Figure 1: Goodness-of-Fit Assessment**
-   - Panel A: Percentile agreement across variables
-   - Panel B: P-P plots for variables with largest distributional differences
-   - Panel C: Conditional percentile bands (outcome vs age)
-   - Panel D: Correlation structure preservation
-
-4. **Figure 2: Distribution Comparisons**
-   - Histogram overlays for all continuous variables
-
-5. **Figure 3: Conditional Density Heatmaps**
-   - Bivariate density plots showing relationship preservation
-
-6. **Summary Statistics Table**
-   - Complete metrics with interpretation thresholds
-
-7. **Conclusions**
-   - Automated conclusions based on validation metrics
+1. **Executive Summary** - Key metrics with interpretation
+2. **Data Overview** - Sample characteristics, descriptive statistics
+3. **Figure 1: Goodness-of-Fit** - Percentile agreement, P-P plots, conditional percentile bands, correlation preservation
+4. **Figure 2: Distribution Comparisons** - Histogram overlays
+5. **Figure 3: Conditional Density Heatmaps** - Bivariate density plots
+6. **Summary Statistics Table** - Complete metrics with thresholds
+7. **Conclusions** - Automated interpretation
 
 #### Interpretation Thresholds
 
@@ -369,8 +494,6 @@ The PDF validation report includes:
 
 #### Required Packages
 
-The validation function requires additional packages:
-
 ```r
 install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2", 
                    "dplyr", "tidyr", "patchwork", "scales", "viridis"))
@@ -378,21 +501,60 @@ install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2",
 
 ---
 
-## Available Datasets
+## Available Pre-fitted Datasets
 
-| Dataset | Country | Population | Variables | Creatinine | Albumin | Age Range |
-|---------|---------|------------|-----------|------------|---------|-----------|
-| RUMC | Netherlands | Hospital patients | AGE, HEIGHT, WEIGHT, CREAT | ✓ | ✗ | 0-100 |
-| RUMC_IC | Netherlands | ICU patients | AGE, HEIGHT, WEIGHT, CREAT, ALBUMIN | ✓ | ✓ | 18+ only |
-| CHNS | China | General population | AGE, HEIGHT, WEIGHT | ✗ | ✗ | 0-100 |
-| KNHANES | South Korea | General population | AGE, HEIGHT, WEIGHT | ✗ | ✗ | 0-100 |
-| TANZANIA | Tanzania | DHS Survey | AGE, HEIGHT, WEIGHT | ✗ | ✗ | 0-100 |
-| NHANES | USA | General population | AGE, HEIGHT, WEIGHT, CREAT | ✓ | ✗ | 0-100 |
-| HSE | UK | General population | AGE, HEIGHT, WEIGHT | ✗ | ✗ | 0-100 |
+| Dataset | Country | Population | N | Age Range | Variables |
+|---------|---------|------------|---|-----------|-----------|
+| RUMC | Netherlands | Hospital patients | ~12,000 | 0–100 | AGE, HEIGHT, WEIGHT, CREAT |
+| RUMC_IC | Netherlands | ICU patients (adults only) | ~3,000 | 18–100 | AGE, HEIGHT, WEIGHT, CREAT, ALBUMIN |
+| CHNS | China | General population | ~25,000 | 0–100 | AGE, HEIGHT, WEIGHT |
+| KNHANES | South Korea | General population | ~50,000 | 1–80 | AGE, HEIGHT, WEIGHT, CREAT |
+| TANZANIA | Tanzania | Women 15–49, children 0–5 | ~22,000 | 0–49 | AGE, HEIGHT, WEIGHT |
+| NHANES | USA | General population | ~40,000 | 0–80 | AGE, HEIGHT, WEIGHT, CREAT |
+| HSE | UK | General population | ~45,000 | 0–90 | AGE, HEIGHT, WEIGHT |
+
+**Note:** The JSON files contain only statistical parameters (copula structure, quantiles), not individual-level data.
 
 ---
 
-## Typical Workflow
+## Typical Workflows
+
+### Workflow 1: Fit Your Own Copula
+
+```r
+library(copulapop)
+
+# 1. Load your data
+my_data <- read.csv("hospital_data.csv")
+
+# 2. Fit copula
+copula <- fit_copula(
+  my_data,
+  name = "My Hospital",
+  variables = c("AGE", "HEIGHT", "WEIGHT", "CREAT"),
+  description = "Hospitalized patients 2020-2024"
+)
+
+# 3. Inspect
+print(copula)
+summary(copula)
+
+# 4. Generate virtual population
+pop <- generate_population_from_copula(copula, n = 1000)
+head(pop)
+
+# 5. Save for later
+save_copula(copula, "my_hospital.json")
+
+# 6. Validate (optional)
+validate_copula(
+  source_data = my_data,
+  dataset = "my_hospital.json",
+  output_file = "validation.pdf"
+)
+```
+
+### Workflow 2: Use Pre-fitted Datasets
 
 ```r
 library(copulapop)
@@ -402,11 +564,9 @@ set_data_path("/path/to/copulapop/data/")
 
 # 2. Explore available datasets
 list_datasets()
-
-# 3. Get information about a specific dataset
 get_dataset_info("RUMC")
 
-# 4. Generate virtual population
+# 3. Generate virtual population
 pop <- generate_population(
   dataset = "RUMC",
   n = 1000,
@@ -415,45 +575,9 @@ pop <- generate_population(
   seed = 42
 )
 
-# 5. Inspect results
+# 4. Inspect results
 head(pop)
 summary(pop)
-
-# 6. Generate validation report (optional)
-validate_copula(
-  source_data = "RUMC.csv",
-  dataset = "RUMC",
-  output_file = "RUMC_validation.pdf",
-  n_generate = 1000
-)
-```
-
----
-
-## Custom Copula Workflow
-
-```r
-library(copulapop)
-
-# 1. Fit your own copula using generate_vine_copulas.R
-#    This produces a JSON file (e.g., "my_copula.json")
-
-# 2. Generate population from your custom copula
-pop <- generate_population_from_json(
-  json_file = "my_copula.json",
-  n = 1000,
-  age_range = c(18, 80)
-)
-
-# 3. Validate against original data
-validate_copula(
-  source_data = "my_original_data.csv",
-  dataset = "my_copula.json",
-  output_file = "my_validation.pdf",
-  n_generate = 1000,
-  title = "Custom Copula Validation",
-  author = "Your Name"
-)
 ```
 
 ---
@@ -491,15 +615,16 @@ Required only for `validate_copula()`:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-20-01 | Initial release |
+| 2.0.0 | 2026-01-26 | Added `fit_copula()`, `save_copula()`, `load_copula()`, `generate_population_from_copula()` |
+| 1.0.0 | 2026-01-20 | Initial release with pre-fitted datasets and validation |
 
 ---
 
 ## Citation
 
 ```
-ter Heine R (2026). copulapop: Generate Virtual Populations Using Vine Copulas.
-R package version 1.0.0 https://github.com/robterheine/copulapop
+ter Heine R (2026). copulapop: Fit and Generate Virtual Populations Using Vine Copulas.
+R package version 2.0.0. https://github.com/robterheine/copulapop
 ```
 
 ---
