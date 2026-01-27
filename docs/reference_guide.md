@@ -60,7 +60,7 @@ Fits an R-Vine copula model to a dataset, creating a copula object that can be u
 | `data` | data.frame | *required* | Source data containing the variables |
 | `name` | character | "Custom Dataset" | Name for the copula |
 | `description` | character | NULL | Optional description |
-| `variables` | character vector | c("AGE", "HEIGHT", "WEIGHT") | Variables to include (AGE required) |
+| `variables` | character vector | c("AGE", "HEIGHT", "WEIGHT") | **Continuous** variables to include (AGE required). Do NOT include sex. |
 | `sex_column` | character | NULL | Column name for sex (auto-detected) |
 | `height_in_cm` | logical | TRUE | Convert HEIGHT from cm to meters |
 | `country` | character | NULL | Optional country name |
@@ -124,14 +124,66 @@ If vine copula fitting fails (insufficient data or numerical issues), a Gaussian
 
 #### Input Data Requirements
 
-Your data should have:
-- **AGE** column (required)
-- **HEIGHT** column (in cm or m)
-- **WEIGHT** column (in kg)
-- **SEX** column (optional: 1/M/male = male, 0/F/female = female)
-- Additional continuous variables (e.g., CREAT, ALBUMIN)
+##### Required Data Format
 
-Column names are case-insensitive.
+Your CSV or data.frame should be structured as follows:
+
+| Column | Required | Type | Unit | Description |
+|--------|----------|------|------|-------------|
+| AGE | Yes | Numeric | years | Age of subject |
+| HEIGHT | Recommended | Numeric | cm or m | Height (auto-converted if in cm) |
+| WEIGHT | Recommended | Numeric | kg | Weight |
+| SEX | Recommended | Numeric or character | - | Sex indicator (see below) |
+| CREAT | Optional | Numeric | µmol/L | Serum creatinine |
+| ALBUMIN | Optional | Numeric | g/L | Serum albumin |
+| *other* | Optional | Numeric | - | Any continuous variable |
+
+##### Example Dataset
+
+```
+AGE,HEIGHT,WEIGHT,SEX,CREAT
+45,175,82,1,88
+32,162,65,0,62
+8,128,26,1,35
+67,168,78,0,95
+```
+
+##### Sex Column Encoding
+
+The sex column is auto-detected (looks for: SEXISMALE, SEX, GENDER, MALE) and accepts:
+
+| Male | Female |
+|------|--------|
+| 1 | 0 |
+| "M" | "F" |
+| "male" | "female" |
+| TRUE | FALSE |
+
+##### ⚠️ IMPORTANT: Do NOT include sex in `variables`
+
+The `variables` parameter should contain **only continuous variables**. The sex column is used automatically for **stratification** (fitting separate copulas for males and females), not as a copula variable itself.
+
+```r
+# ❌ WRONG - will cause an error
+copula <- fit_copula(
+  my_data,
+  variables = c("AGE", "HEIGHT", "WEIGHT", "SEXISMALE")  # ERROR!
+)
+
+# ✓ CORRECT
+copula <- fit_copula(
+  my_data,
+  variables = c("AGE", "HEIGHT", "WEIGHT")
+)
+```
+
+**Why?** Within each stratum (e.g., adult females), SEXISMALE has zero variance (all values are 0), making correlation calculation impossible.
+
+##### Column Name Handling
+
+- Column names are **case-insensitive** (age, AGE, Age all work)
+- HEIGHT is auto-converted from cm to m if values > 3
+- Missing values (NA) are handled: rows with NA in any variable are excluded
 
 ---
 
