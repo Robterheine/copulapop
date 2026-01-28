@@ -590,7 +590,7 @@ if (length(continuous_vars) >= 2) {
 (panel_a + panel_b) / (panel_c + panel_d)
 ```
 
-**Interpretation:** Panel A shows percentile agreement across variables - overlapping lines indicate good marginal distribution fit. Panel B shows P-P plots for variables with largest distributional differences; deviations from the diagonal beyond the grey band (+/-5%) indicate poor fit. Panel C shows conditional percentile bands for age-dependent relationships. Panel D shows correlation structure preservation; points near the diagonal with RMSE < 0.10 indicate excellent preservation.
+**Interpretation:** Panel A shows percentile agreement across variables - overlapping lines indicate good marginal distribution fit. Panel B shows P-P (Probability-Probability) plots comparing cumulative distribution functions (CDFs). A CDF shows, for any value x, the proportion of observations less than or equal to x. The theoretical CDF represents the original data, the empirical CDF represents the generated data. Points on the diagonal indicate identical distributions; deviations beyond the grey band (±5%) indicate poor fit. Panel C shows conditional percentile bands for age-dependent relationships. Panel D shows correlation structure preservation; points near the diagonal with RMSE < 0.10 indicate excellent preservation.
 
 \\newpage
 
