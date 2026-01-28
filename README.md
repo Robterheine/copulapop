@@ -4,7 +4,7 @@
 
 **Fit and Generate Realistic Virtual Patient Populations Using Vine Copulas**
 
-copulapop creates virtual patient populations for pharmacometric modeling, PBPK simulations, and clinical trial simulations. It uses R-Vine copulas to preserve complex correlation structures and tail dependencies between covariates.
+Copulas have been shown to be able to reproduce realistic datasets for use in pharmacometrics, as outlined by Zwep et al in Clin Pharmacol Ther 2024 Apr;115(4):795-804 (https://doi.org/10.1002/cpt.3099). The package copulapop creates virtual patient populations for example for pharmacometric modeling, PBPK simulations, and clinical trial simulations. It uses the vinecopula package for creation of copulas (https://cran.r-project.org/web/packages/VineCopula/index.html) also hosted at github https://github.com/tnagler/VineCopula by Thomas Nagler. More information about vinae copulas can be found at Department of Mathematics, TUM School of Computation, Information and Technology, Technische Universität München https://www.math.cit.tum.de/math/forschung/gruppen/statistics/vine-copula-models/ and the book by Claudia Czado published by Springer https://link.springer.com/book/10.1007/978-3-030-13785-4 .
 
 ## Features
 
@@ -193,14 +193,7 @@ install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2",
 - **Adults (≥18 years)**: CKD-EPI 2021 race-free equation
 - **Children (<18 years)**: Bedside Schwartz formula
 
-## Citation
 
-If you use copulapop in your research, please cite:
-
-```
-ter Heine R (2026). copulapop: Fit and Generate Virtual Populations Using Vine Copulas.
-R package version 2.0.0. https://github.com/robterheine/copulapop
-```
 
 ## Data Sources
 
