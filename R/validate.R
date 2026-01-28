@@ -709,6 +709,26 @@ kable(summary_df, booktabs = TRUE, caption = "Validation summary statistics") %>
   kable_styling(latex_options = c("hold_position"))
 ```
 
+## Metric Definitions
+
+**Correlation RMSE (Root Mean Square Error):** Measures how well the copula preserves the correlation structure between variables. It is calculated as the root mean square of differences between Spearman correlations in the original and generated data:
+
+$$RMSE = \\sqrt{\\frac{1}{n}\\sum_{i<j}(\\rho_{ij}^{orig} - \\rho_{ij}^{gen})^2}$$
+
+The thresholds are based on practical significance in correlation analysis. An RMSE < 0.05 indicates that pairwise correlations differ by less than 0.05 on average, which is within typical sampling variability for moderate sample sizes. The threshold of < 0.10 aligns with psychometric standards where test-retest correlations within ±0.10 are considered equivalent (Cicchetti, 1994).
+
+**KS Statistic (Kolmogorov-Smirnov):** Measures the maximum vertical distance between the empirical cumulative distribution functions (ECDFs) of the original and generated data for each variable:
+
+$$D = \\max_x |F_{orig}(x) - F_{gen}(x)|$$
+
+Values range from 0 (identical distributions) to 1 (completely non-overlapping). The thresholds are consistent with visual predictive check (VPC) methodology in pharmacometrics, where prediction intervals of 90% (corresponding to ±5% deviation) are standard practice for model qualification (Holford, 2005; Karlsson \\& Savic, 2007).
+
+**References:**
+
+- Cicchetti DV (1994). Guidelines, criteria, and rules of thumb for evaluating normed and standardized assessment instruments in psychology. *Psychological Assessment* 6(4):284-290.
+- Holford NHG (2005). The visual predictive check: superiority to standard diagnostic (Rorschach) plots. *PAGE 14*, Abstr 738.
+- Karlsson MO, Savic RM (2007). Diagnosing model diagnostics. *Clin Pharmacol Ther* 82(1):17-20.
+
 # Conclusions
 
 ```{r conclusions, results="asis"}
