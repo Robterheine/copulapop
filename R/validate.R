@@ -474,11 +474,16 @@ calc_pp <- function(orig, gen, var) {
   data.frame(variable = var, theoretical = probs, empirical = orig_ecdf(gen_q))
 }
 
-# Select top 6 by KS stat
-top_ks <- names(sort(ks_stats, decreasing = TRUE))[1:min(6, length(ks_stats))]
-pp_data <- do.call(rbind, lapply(top_ks, function(v) {
-  calc_pp(original_data[[v]], generated_data[[v]], v)
-}))
+# Select variables for P-P plots (all continuous vars, up to 6)
+if (length(continuous_vars) > 0) {
+  pp_vars <- continuous_vars[1:min(6, length(continuous_vars))]
+  pp_list <- lapply(pp_vars, function(v) {
+    calc_pp(original_data[[v]], generated_data[[v]], v)
+  })
+  pp_data <- do.call(rbind, pp_list[!sapply(pp_list, is.null)])
+} else {
+  pp_data <- NULL
+}
 
 if (!is.null(pp_data) && nrow(pp_data) > 0) {
   pp_data$max_dev <- ave(abs(pp_data$empirical - pp_data$theoretical),
