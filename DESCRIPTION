@@ -1,12 +1,11 @@
 Package: copulapop
 Type: Package
 Title: Fit and Generate Virtual Populations Using Vine Copulas
-Version: 2.0.0
-Date: 2026-01-26
+Version: 2.0.1
+Date: 2026-01-28
 Authors@R: person("Rob", "ter Heine", 
-                  email = "rob.terheine@radboudumc.nl",
-                  role = c("aut", "cre"),
-                  comment = c(ORCID = "0000-0001-9720-866X"))
+                  email = "r.terheine@radboudumc.nl",
+                  role = c("aut", "cre"))
 Description: Fit R-Vine copulas to your own datasets and generate realistic 
     virtual patient populations for pharmacometric modeling, PBPK simulations, 
     and clinical trial simulations. Preserves complex correlation structures 
@@ -40,6 +39,7 @@ Suggests:
     patchwork,
     scales,
     viridis,
+    tinytex,
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Config/testthat/edition: 3

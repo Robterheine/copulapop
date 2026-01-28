@@ -638,11 +638,13 @@ if (!is.na(age_col) && length(continuous_vars) >= 2) {
         annotate("text", x = 0.5, y = 0.5, label = paste("Insufficient data for", v)))
     }
     
-    # Use geom_bin2d as more reliable alternative to geom_hex
+    # Use geom_bin2d with density (relative intensity) instead of counts
+    # This makes comparison independent of sample size
     ggplot(combined, aes(x = x, y = y)) +
-      geom_bin2d(bins = 30) +
+      geom_bin2d(aes(fill = after_stat(density)), bins = 30) +
       facet_wrap(~source) +
-      scale_fill_viridis_c(option = "plasma", trans = "log1p") +
+      scale_fill_viridis_c(option = "plasma", trans = "log1p", 
+                           name = "Density") +
       labs(title = paste(v, "|", age_col), x = age_col, y = v) +
       theme_bw(base_size = 9) +
       theme(strip.background = element_rect(fill = "grey90"),
