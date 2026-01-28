@@ -185,7 +185,7 @@ The report includes:
 
 ```r
 install.packages(c("rmarkdown", "knitr", "kableExtra", "ggplot2", 
-                   "dplyr", "tidyr", "patchwork", "scales", "viridis"))
+                   "dplyr", "tidyr", "patchwork", "scales", "tinytex", viridis"))
 ```
 
 ## eGFR Calculation
@@ -215,5 +215,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.1 | 2026-01-26 | Changed heatmaps from absolute to relative counts
 | 2.0.0 | 2026-01-26 | Added `fit_copula()`, `save_copula()`, `load_copula()`, `generate_population_from_copula()` |
 | 1.0.0 | 2026-01-20 | Initial release with pre-fitted datasets and validation |
